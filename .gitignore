@@ -1,0 +1,7 @@
+# Project exclude paths
+/cmake-build-debug/
+/cmake-build-release/
+/MNN/3rd_party/flatbuffers/tests/namespace_test/namespace_test1_generated.js
+/MNN/3rd_party/flatbuffers/tests/namespace_test/namespace_test2_generated.js
+/MNN/3rd_party/flatbuffers/tests/union_vector/union_vector_generated.js
+/MNN/3rd_party/flatbuffers/tests/monster_test_generated.js
