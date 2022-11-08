@@ -7,7 +7,7 @@
 #include "FaceRec.hpp"
 
 
-int main(int argc, char **argv) {
+int main() {
 
     // gets home directory
     struct passwd *pw = getpwuid(getuid());
