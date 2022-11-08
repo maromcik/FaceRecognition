@@ -1,5 +1,19 @@
+/**
+ * @brief FaceRecognition class that completes the application
+ *
+ * @author Roman Alexander Mariancik
+ * Contact: 492965@muni.cz
+ */
+
 #include "FaceRec.hpp"
 
+/**
+ *
+ * @param server_ip - the ip of the server
+ * @param port - the open port on the server
+ * @param camera - camera id
+ * @param stream - camera stream
+ */
 FaceRec::FaceRec(const std::string &server_ip, int port, const std::string &camera, const std::string &stream) {
     this->server_ip = server_ip.c_str();
     this->port = port;
@@ -7,6 +21,12 @@ FaceRec::FaceRec(const std::string &server_ip, int port, const std::string &came
     this->stream = stream;
 }
 
+/**
+ * The run function runs until the application ends
+ * It reads the stream, calls the @process() function to analyse each frame and optionally desplays the results
+ *
+ * @param winname the name of the window to be opened, must be different in each thread
+ */
 void FaceRec::run(const std::string &winname) {
     std::cout << "Face Recognition is starting" << std::endl;
     cv::VideoCapture cap;
@@ -41,6 +61,16 @@ void FaceRec::run(const std::string &winname) {
 #endif
 }
 
+/**
+ * Processes each frame - detects faces and performs alignment
+ * Aligned faces are sent over the network with the @send_data() function
+ * Various parts of this function are enabled or disabled with macros
+ * If no output to screen is necessary, there is no need to waste processing time on drawing rectangles to frames
+ * If debug is disabled, no output is printed to the console
+ *
+ * @param frame
+ * @return frame
+ */
 cv::Mat FaceRec::process(cv::Mat frame) {
     std::vector<FaceInfo> face_info;
     std::vector<rectangle> faces;
@@ -91,11 +121,19 @@ cv::Mat FaceRec::process(cv::Mat frame) {
     return frame;
 }
 
-
+/**
+ * Creates a socket, sends an image, and closes the socket
+ * Constant reopening of sockets turns out to be simpler to implement and more reliable than keeping the socket
+ * open. Furthermore, overhead of opening and closing sockets is relatively negligible in comparison with
+ * performing face detection.
+ *
+ * @param img - the input image to be sent
+ * @return 0 if successful, -1 if not
+ */
 int FaceRec::send_data(const cv::Mat &img) {
     int sock = 0, client_fd;
     struct sockaddr_in serv_addr;
-    auto compressed_img = compress_img(img);
+    auto jpg_img = encode_img(img);
 
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("\n Socket creation error \n");
@@ -117,7 +155,7 @@ int FaceRec::send_data(const cv::Mat &img) {
 
     std::cout << camera << std::endl;
     send(sock, camera, 7, 0);
-    send(sock, compressed_img.data(), compressed_img.size(), 0);
+    send(sock, jpg_img.data(), jpg_img.size(), 0);
     printf("Image sent successfully \n");
     // closing the connected socket
     close(client_fd);
@@ -125,15 +163,26 @@ int FaceRec::send_data(const cv::Mat &img) {
     return 0;
 }
 
-
-std::vector<uchar> FaceRec::compress_img(const cv::Mat &frame) {
+/**
+ * Encodes the image with opencv
+ *
+ * @param frame
+ * @return jpg data
+ */
+std::vector<uchar> FaceRec::encode_img(const cv::Mat &frame) {
     std::vector<uchar> buf;
     if (!cv::imencode(".jpg", frame, buf)) {
-        std::cerr << "Failed to compress frame." << std::endl;
+        std::cerr << "Failed to encode frame." << std::endl;
     }
     return buf;
 }
 
+/**
+ * converts dlib image to opencv image
+ *
+ * @param img
+ * @return
+ */
 cv::Mat FaceRec::convert_color(matrix<rgb_pixel> img) {
     cv::Mat out_img;
     cv::cvtColor(dlib::toMat(img), out_img, cv::COLOR_BGR2RGB);
@@ -141,6 +190,11 @@ cv::Mat FaceRec::convert_color(matrix<rgb_pixel> img) {
 }
 
 
+/**
+ * Compares face descriptors, used on face recognition testing.
+ * Calculates the Euclidean distance. In Python on the server it is implemented with the np.linalg.norm() function.
+ *
+ */
 #ifdef RECOGNITION
 double FaceRec::compare(matrix<float, 0, 1> known, matrix<float, 0, 1> unknown) {
     double temp = 0;

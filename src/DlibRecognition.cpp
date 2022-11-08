@@ -12,7 +12,13 @@ DlibRecognition::DlibRecognition(const std::string& model_folder) {
 
 }
 
-
+/**
+ * Detects facial landmarks and aligns faces.
+ *
+ * @param frame - frame containg the face
+ * @param face - bounding box of the face
+ * @return face_chip - aligned face
+ */
 matrix<rgb_pixel> DlibRecognition::get_shape(const cv::Mat& frame, dlib::rectangle face) {
     cv_image<bgr_pixel> cimg(frame);
     auto shape = sp(cimg, face);
@@ -21,12 +27,18 @@ matrix<rgb_pixel> DlibRecognition::get_shape(const cv::Mat& frame, dlib::rectang
     return face_chip;
 }
 
+/**
+ * Calculates descriptors with Dlib
+ */
 #ifdef RECOGNITION
 matrix<float,0,1> DlibRecognition::get_descriptor(const dlib::matrix<rgb_pixel>& face_chip) {
     matrix<float,0,1> descriptors = net(std::move(face_chip));
     return descriptors;
 }
 
+/**
+ * Performs the whole face recognition pipeline with Dlib (detector should be replaced with the ULFG detector)
+ */
 std::vector<matrix<float, 0, 1>> DlibRecognition::process(cv::Mat image) {
     std::vector<matrix<float, 0, 1>> out = {};
     for (auto face : get_detection(image)) {
@@ -36,6 +48,9 @@ std::vector<matrix<float, 0, 1>> DlibRecognition::process(cv::Mat image) {
     return out;
 }
 
+/**
+ * Detects faces with Dlib
+ */
 std::vector<dlib::rectangle> DlibRecognition::get_detection(const cv::Mat& frame) {
 //    cv::resize(frame, frame, cv::Size(), 0.25, 0.25);
     cv_image<bgr_pixel> cimg(frame);

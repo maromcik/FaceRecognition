@@ -21,7 +21,7 @@ public:
     void run(const std::string& winname);
     cv::Mat process(cv::Mat frame);
     int send_data(const cv::Mat& img);
-    std::vector<uchar> compress_img(const cv::Mat& frame);
+    std::vector<uchar> encode_img(const cv::Mat& frame);
     #ifdef RECOGNITION
         double compare(matrix<float, 0, 1> known, matrix<float, 0, 1> unknown);
     #endif

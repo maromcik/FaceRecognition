@@ -20,18 +20,6 @@
 
 using namespace dlib;
 
-// The next bit of code defines a ResNet network.  It's basically copied
-// and pasted from the dnn_imagenet_ex.cpp example, except we replaced the loss
-// layer with loss_metric and made the network somewhat smaller.  Go read the introductory
-// dlib DNN examples to learn what all this stuff means.
-//
-// Also, the dnn_metric_learning_on_images_ex.cpp example shows how to train this network.
-// The dlib_face_recognition_resnet_model_v1 model used by this example was trained using
-// essentially the code shown in dnn_metric_learning_on_images_ex.cpp except the
-// mini-batches were made larger (35x15 instead of 5x5), the iterations without progress
-// was set to 10000, and the training dataset consisted of about 3 million images instead of
-// 55.  Also, the input layer was locked to images of size 150.
-
 // The following anet_type definition and preceding templates enclosed in the RECOGNITION macro
 // are taken over from a Dlib example: http://dlib.net/dnn_face_recognition_ex.cpp.html
 #ifdef RECOGNITION
