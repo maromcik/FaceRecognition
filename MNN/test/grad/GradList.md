@@ -65,7 +65,7 @@
   - [ ] TensorArrayScatter
   - [ ] TensorArraySplit
   - [ ] TensorArrayConcat
-  - [x] StridedSlice
+  - [ ] StridedSlice
   - [ ] SpaceToBatchND
   - [ ] BatchToSpaceND
   - [x] Slice
@@ -96,10 +96,9 @@
   - [ ] Padding
   - [x] ConvertTensor
   - [ ] Im2Col
-  - [ ] Col2Im
   - [x] Concat
   - [ ] Pack
-  - [x] BroadcastTo
+  - [ ] BroadcastTo
   - [ ] Threshold
   - [ ] SpatialProduct
   - [ ] Pooling3D
@@ -109,20 +108,15 @@
   - [ ] Normalize
   - [ ] InnerProduct
   - [ ] ELU
-  - [x] SELU
+  - [ ] SELU
   - [ ] Dilation2D
   - [ ] CosineSimilarity
   - [ ] Convolution3D
   - [x] BatchMatMul
-  - [ ] CumSum
-  - [ ] CumProd
-  - [ ] ScatterElements
-  - [ ] GatherElements
-  - [ ] ScatterNd
-  - [ ] EyeLike
-  - [ ] RNN
-  - [ ] RNNSequenceGRU
 
+- [ ] ArgMin
+- [ ] ArgMax
+- [ ] InstanceNorm
 - [x] Convolution
 - [x] ConvolutionDepthwise
 - [ ] CropAndResize
@@ -130,27 +124,46 @@
 - [x] Deconvolution
 - [x] DeconvolutionDepthwise
 - [x] Dropout
-- [ ] Interp
+- [ ] Exp
+- [ ] Im2Seq
+- [x] Interp
+- [ ] Log
 - [x] MatMul
 - [x] Pooling
+- [ ] Power
 - [x] PReLU
+- [ ] Range
+- [ ] ReduceJoin
 - [x] ReLU
 - [x] ReLU6
 - [x] Resize
-- [x] Scale
-- [x] Selu
+- [ ] RNN
+- [ ] ROIPooling
+- [ ] Scale
+- [ ] Selu
+- [ ] Seq2Out
 - [x] Sigmoid
 - [x] Softmax
+- [ ] Col2Im
 - [x] TanH
-- [x] TopKV2
-- [x] MatrixBandPart
-- [ ] ROIPooling
+- [ ] TopKV2
+- [ ] RNNSequenceGRU
+- [ ] MatrixBandPart
+- [ ] ScatterNd
+- [ ] OneHot
+- [ ] RandomUniform
 - [ ] ROIAlign
+- [ ] RandomNormal
+- [ ] EyeLike
+- [ ] CumSum
 - [ ] Det
+- [ ] CumProd
+- [ ] ScatterElements
+- [ ] GatherElements
 - [x] Select
+- [ ] Broastcast
 - [ ] BatchNorm
 - [ ] LayerNorm
-- [ ] InstanceNorm
 - [ ] GridSample
 - [ ] While
 - [ ] If

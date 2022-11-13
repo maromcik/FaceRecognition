@@ -85,7 +85,6 @@ static void compareForwadType(Interpreter* net, MNNForwardType expectType, MNNFo
             if (tensor->buffer().device == 0 && tensor->buffer().host == nullptr) {
                 return true;
             }
-
             std::shared_ptr<MNN::Tensor> copyTensor(new MNN::Tensor(tensor, tensor->getDimensionType()));
             tensor->copyToHostTensor(copyTensor.get());
             correctResult.emplace_back(copyTensor);
@@ -107,8 +106,6 @@ static void compareForwadType(Interpreter* net, MNNForwardType expectType, MNNFo
             if (tensor->buffer().device == 0 && tensor->buffer().host == nullptr) {
                 return true;
             }
-            
-            tensor->wait(MNN::Tensor::MAP_TENSOR_READ, false);
             std::shared_ptr<MNN::Tensor> copyTensor(new MNN::Tensor(tensor, tensor->getDimensionType()));
             tensor->copyToHostTensor(copyTensor.get());
             auto expectTensor = correctResult[index++];

@@ -99,7 +99,6 @@ bool SizeComputer::computeOutputSize(const MNN::Op* op, const std::vector<Tensor
         if (nullptr != computer) {
             bool ret = computer->onComputeSize(op, inputs, outputs);
 #ifdef MNN_DEBUG_TENSOR_SIZE
-
             if (op->name() != nullptr) {
                 MNN_PRINT("===> compute shape: %s, [%s]\n", op->name()->c_str(), MNN::EnumNameOpType(op->type()));
             } else {
@@ -108,7 +107,7 @@ bool SizeComputer::computeOutputSize(const MNN::Op* op, const std::vector<Tensor
             if (inputs.size()) {
                 MNN_PRINT("\tInputs:\n");
                 for (auto o : inputs) {
-                    MNN_PRINT("\tptr=%p, format=%s, datatype=%d;\t", o, EnumNameMNN_DATA_FORMAT(TensorUtils::getDescribe(o)->dimensionFormat), o->getType().code);
+                    MNN_PRINT("\tformat=%s, datatype=%d;\t", EnumNameMNN_DATA_FORMAT(TensorUtils::getDescribe(o)->dimensionFormat), o->getType().code);
                     if (o->dimensions() == 0) {
                         MNN_PRINT("\t*Scalar*");
                     }
@@ -120,7 +119,7 @@ bool SizeComputer::computeOutputSize(const MNN::Op* op, const std::vector<Tensor
             }
             MNN_PRINT("\tOutputs:\n");
             for (auto o : outputs) {
-                MNN_PRINT("\tptr=:%p, format=%s, datatype=%d;\t",o, EnumNameMNN_DATA_FORMAT(TensorUtils::getDescribe(o)->dimensionFormat), o->getType().code);
+                MNN_PRINT("\tformat=%s, datatype=%d;\t", EnumNameMNN_DATA_FORMAT(TensorUtils::getDescribe(o)->dimensionFormat), o->getType().code);
                 if (o->dimensions() == 0) {
                     MNN_PRINT("\t*Scalar*");
                 }
@@ -129,8 +128,6 @@ bool SizeComputer::computeOutputSize(const MNN::Op* op, const std::vector<Tensor
                 }
                 MNN_PRINT("\n");
             }
-// }
-
 #endif
             return ret;
         }

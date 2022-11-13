@@ -8,8 +8,8 @@
 
 #ifndef NPUCommonExecution_hpp
 #define NPUCommonExecution_hpp
-#include "NPUBackend.hpp"
 #include "core/Execution.hpp"
+#include "NPUBackend.hpp"
 
 using namespace std;
 namespace MNN {

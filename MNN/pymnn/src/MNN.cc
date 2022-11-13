@@ -334,7 +334,6 @@ static PyTypeObject PyMNNSessionType = {
 static PyObject* PyMNNTensor_new(struct _typeobject *type, PyObject *args, PyObject *kwds);
 static void PyMNNTensor_dealloc(PyMNNTensor *);
 static int PyMNNTensor_init(PyMNNTensor *self, PyObject *args, PyObject *kwds);
-static PyObject* PyMNNTensor_repr(PyObject *self);
 #ifdef PYMNN_NUMPY_USABLE
 static PyObject* PyMNNTensor_fromNumpy(PyMNNTensor *self, PyObject *args);
 static PyObject* PyMNNTensor_getNumpyData(PyMNNTensor *self, PyObject *args);
@@ -376,7 +375,7 @@ static PyTypeObject PyMNNTensorType = {
     0,                                        /*tp_getattr*/
     0,                                        /*tp_setattr*/
     0,                                        /*tp_compare*/
-    PyMNNTensor_repr,                         /*tp_repr*/
+    0,                                        /*tp_repr*/
     0,                                        /*tp_as_number*/
     0,                                        /*tp_as_sequence*/
     0,                                        /*tp_as_mapping*/
@@ -658,10 +657,7 @@ static std::pair<bool, std::pair<ScheduleConfig, std::shared_ptr<BackendConfig>>
                     MNN_PRINT("MNN use low precision\n");
                     backendConfig->precision = MNN::BackendConfig::Precision_Low;
                 }
-                if (!obj_name.compare("Low_BF16")) {
-                    MNN_PRINT("MNN use lowBF precision\n");
-                    backendConfig->precision = MNN::BackendConfig::Precision_Low_BF16;
-                }
+                
                 if (!obj_name.compare("high")) {
                     MNN_PRINT("MNN use high precision\n");
                     backendConfig->precision = MNN::BackendConfig::Precision_High;
@@ -890,7 +886,9 @@ static PyObject* PyMNNInterpreter_setSessionMode(PyMNNInterpreter *self, PyObjec
                         "PyMNNInterpreter_setSessionMode: Not interger input");
         return NULL;
     }
+    
     auto mode = (MNN::Interpreter::SessionMode)session_val;
+    
     self->interpreter->setSessionMode(mode);
     Py_RETURN_NONE;
 }
@@ -1512,7 +1510,7 @@ static int PyMNNTensor_init(PyMNNTensor *self, PyObject *args, PyObject *kwds) {
             break;
         case 4:
             parse_res = PyArg_ParseTuple(args, "OOOl", &shape, &dataType, &data, &dimensionType)
-                        && isInts(shape) && (isVals(data) || isInt(data));
+                        && isInts(shape) && isVals(data);
             break;
         default:
             parse_res = false;
@@ -1522,7 +1520,7 @@ static int PyMNNTensor_init(PyMNNTensor *self, PyObject *args, PyObject *kwds) {
                         "\t0. (Var)\n"
                         "\t1. (Tensor/Var, DimensionType)\n"
                         "\t2. ([int], DataType, DimensionType)\n"
-                        "\t3. ([int], DataType, ndarray/list/tuple/bytes/PyCapsule/int_addr, DimensionType)\n");
+                        "\t3. ([int], DataType, tuple/ndarray, DimensionType)\n");
         return -1;
     }
 #ifdef PYMNN_EXPR_API
@@ -1560,6 +1558,41 @@ static int PyMNNTensor_init(PyMNNTensor *self, PyObject *args, PyObject *kwds) {
         return 0;
     }
     // 2,3. create Tensor by shape and data
+    size_t shapeSize = PyTuple_Size(shape);
+    std::vector<int> vShape = toInts(shape);
+    size_t dataSize = 1;
+    for (auto i : vShape) {
+        dataSize *= i;
+    }
+    int inputData = 0; // 0: no data; 1: tuple; 2. ndarray
+    void *pData = NULL;
+    if (data) {
+        if(PyTuple_Check(data)) {
+            if(dataSize != PyTuple_Size(data)) {
+                PyErr_SetString(PyExc_Exception,
+                            "PyMNNTensor_init: Tensor Dim not match");
+                return -1;
+            }
+            inputData = 1;
+        } else if(PyCapsule_CheckExact(data)) {
+            PyErr_SetString(PyExc_Exception,
+                            "TODO: PyMNNTensor_init: support PyCapsule");
+        }
+#ifdef PYMNN_NUMPY_USABLE
+        else if (gNumpyValid) {
+            if(PyArray_Check(data)) {
+                if(dataSize != PyArray_Size(data)) {
+                    PyErr_SetString(PyExc_Exception, "PyMNNTensor_init: numpy array size does not match shape requirement");
+                    return -1;
+                }
+                inputData = 2;
+            } else {
+                PyErr_SetString(PyExc_Exception, "PyMNNTensor_init: data is not tuple/numpy");
+                return -1;
+            }
+        }
+#endif
+    }
     halide_type_t htt;
     struct MNN_TLSData *tlsData = getTLSData();
     if (dataType == tlsData->PyMNNHalideTypeInt) {
@@ -1581,101 +1614,71 @@ static int PyMNNTensor_init(PyMNNTensor *self, PyObject *args, PyObject *kwds) {
         htt = *httString();
     }
     else {
-        PyMNN_ERROR_LOG("PyMNNTensor_create: unsupported data type");
+        PyErr_SetString(PyExc_Exception,"PyMNNTensor_create: unsupported data type");
         return -1;
     }
     DType dtype = htype2dtype(htt);
     int itemsize = getitemsize(dtype);
-    size_t shapeSize = PySequenceSize(shape);
-    std::vector<int> vShape = toInts(shape);
-    size_t dataSize = 1;
-    for (auto i : vShape) {
-        dataSize *= i;
+    pData = malloc(dataSize * itemsize);
+    if(NULL == pData) {
+        PyErr_SetString(PyExc_Exception,"PyMNNTensor_init: malloc failed");
+        return -1;
     }
-    void *pData = NULL;
-    if (data && !PyCapsule_CheckExact(data) && !isInt(data)) {
-        if (PyBytes_Check(data)) {
-            int64_t total_len = PyBytes_Size(data);
-            if (dataSize * itemsize != total_len) {
-                PyMNN_ERROR_LOG("PyMNNTensor_init: Tensor Dim not match");
-                return -1;
+    if(inputData == 1) {
+        if (dataType == tlsData->PyMNNHalideTypeInt) {
+            for (size_t i = 0; i < dataSize; i++) {
+                ((int *)pData)[i] = (int)PyLong_AsLong(PyTuple_GetItem(data, i));
             }
-            pData = toPtr(data, DType_UINT8, total_len);
-        } else {
-            if (isPySequence(data)) {
-                int inputSize = PySequenceSize(data);
-                if (dataSize != inputSize) {
-                    PyMNN_ERROR_LOG("PyMNNTensor_init: Tensor Dim not match");
-                    return -1;
-                }
+        } else if (dataType == tlsData->PyMNNHalideTypeFloat) {
+            for (size_t i = 0; i < dataSize; i++) {
+                ((float *)pData)[i] = (float)PyFloat_AsDouble(PyTuple_GetItem(data, i));
             }
+        } else if (dataType == tlsData->PyMNNHalideTypeDouble) {
+            for (size_t i = 0; i < dataSize; i++) {
+               ((double *)pData)[i] = PyFloat_AsDouble(PyTuple_GetItem(data, i));
+            }
+        } else if (dataType == tlsData->PyMNNHalideTypeUint8) {
+            for (size_t i = 0; i < dataSize; i++) {
+               ((uint8_t *)pData)[i] = (uint8_t)PyLong_AsLong(PyTuple_GetItem(data, i));
+            }
+        } else if (dataType == tlsData->PyMNNHalideTypeInt64) {
+            for (size_t i = 0; i < dataSize; i++) {
+               ((int64_t *)pData)[i] = (int64_t)PyLong_AsLong(PyTuple_GetItem(data, i));
+            }
+         } else if (dataType == tlsData->PyMNNHalideTypeString) {
+            for (size_t i = 0; i < dataSize; i++) {
+               char *item = (char *)object2String(PyTuple_GetItem(data, i)).c_str();
+               ((char **)pData)[i] = item;
+            }
+        }
+    }
 #ifdef PYMNN_NUMPY_USABLE
-            else if (gNumpyValid && PyArray_Check(data)) {
-                if(dataSize != PyArray_Size(data)) {
-                    PyMNN_ERROR_LOG("PyMNNTensor_init: numpy array size does not match shape requirement");
-                    return -1;
-                }
-            }
-#endif
-            else {
-                PyMNN_ERROR_LOG("PyMNNTensor_init: data is not tuple/list/bytes/ndarray");
-                return -1;
-            }
-            int64_t total_len = dataSize;
-            pData = toPtr(data, dtype, total_len);
+    else if (inputData == 2 && gNumpyValid) {
+        int npy_type = PyArray_TYPE(data);
+        getitemsize(dtype, npy_type);
+        PyArrayObject *data_cont= PyArray_GETCONTIGUOUS((PyArrayObject*)data);
+        auto tmpBuffer = PyArray_DATA(data_cont);
+        if(NULL == tmpBuffer) {
+             PyErr_SetString(PyExc_Exception,"PyMNNTensor_init: ndarry failed to get buffer data");
+             return -1;
         }
-        if(NULL == pData) {
-            PyMNN_ERROR_LOG("PyMNNTensor_init: data load failed");
-            return -1;
-        }
-    } else {
-        // no data input, set all zeros
-        // pycapsule/int_addr input, copy data
-        pData = malloc(dataSize * itemsize);
-        if (data) {
-            void* srcPtr = nullptr;
-            if (PyCapsule_CheckExact(data)) {
-                srcPtr = PyCapsule_GetPointer(data, NULL);
-            } else {
-                srcPtr = PyLong_AsVoidPtr(data);
-            }
-            if (srcPtr == nullptr) {
-                PyMNN_ERROR_LOG("PyMNNTensor_init: PyCapsule/int_addr pointer is null.");
-                return -1;
-            }
-            memcpy(pData, srcPtr, dataSize * itemsize);
-        } else {
-            memset(pData, 0, dataSize * itemsize);
-        }
-    }
+        memcpy(pData, tmpBuffer, dataSize * itemsize);
+        Py_XDECREF(data_cont);
+     }
+ #endif
     Tensor *tensor = Tensor::create(vShape
                                , htt
                                , pData
                                , (Tensor::DimensionType)dimensionType
                                );
     if (!tensor) {
-        PyMNN_ERROR_LOG("PyMNNTensor_create: Tensor create failed");
+        PyErr_SetString(PyExc_Exception,
+                        "PyMNNTensor_create: Tensor create failed");
         return -1;
     }
     self->tensor = tensor;
     self->owner = 1;
     return 0;
-}
-static PyObject* PyMNNTensor_repr(PyObject *self) {
-    auto tensor = ((PyMNNTensor*)self)->tensor;
-    if (tensor == nullptr || tensor->host<void>() == nullptr) {
-        return toPyObj("array([])");
-    }
-#ifdef PYMNN_NUMPY_USABLE
-    auto content = PyMNNTensor_getNumpyData(((PyMNNTensor*)self), NULL);
-#else
-    auto content = PyMNNVar_read_as_tuple((PyMNNVar*)self, NULL);
-#endif
-    auto reprfunc = PyObject_GetAttrString(content, "__repr__");
-    auto str = PyEval_CallObject(reprfunc, NULL);
-    Py_DECREF(content);
-    Py_DECREF(reprfunc);
-    return str;
 }
 #ifdef PYMNN_NUMPY_USABLE
 static PyObject* PyMNNTensor_fromNumpy(PyMNNTensor *self, PyObject *args) {
@@ -2196,22 +2199,12 @@ std::vector<CV::Point> toPoints(PyObject* obj) {
     }
     if (isVar(obj)) {
         auto vals = toVar(obj);
-        auto info = vals->getInfo();
-        auto size = info->size;
+        auto size = vals->getInfo()->size;
         MNN_ASSERT(size % 2 == 0);
         std::vector<CV::Point> points(size / 2);
-        if (info->type == halide_type_of<float>()) {
-            auto ptr = vals->readMap<float>();
-            for (int i = 0; i < points.size(); i++) {
-                points[i].set(ptr[i*2], ptr[i*2+1]);
-            }
-        } else if (info->type == halide_type_of<int>()) {
-            auto ptr = vals->readMap<int>();
-            for (int i = 0; i < points.size(); i++) {
-                points[i].set(ptr[i*2], ptr[i*2+1]);
-            }
-        } else {
-            PyMNN_ERROR_LOG("Point data type must be int32 or float32.");
+        auto ptr = vals->readMap<float>();
+        for (int i = 0; i < points.size(); i++) {
+            points[i].set(ptr[i*2], ptr[i*2+1]);
         }
         return points;
     }
@@ -2449,7 +2442,6 @@ static PyObject* PyMNNCVMatrix_read(PyMNNCVMatrix *self) {
 }
 static PyObject* PyMNNOpInfo_getName(PyMNNOpInfo *self, PyObject *args);
 static PyObject* PyMNNOpInfo_getType(PyMNNOpInfo *self, PyObject *args);
-static PyObject* PyMNNOpInfo_getFlops(PyMNNOpInfo *self, PyObject *args);
 
 static void PyMNNOpInfo_dealloc(PyMNNOpInfo *self);
 static PyObject* PyMNNOpInfo_new(struct _typeobject *type, PyObject *args, PyObject *kwds);
@@ -2458,7 +2450,6 @@ static int PyMNNOpInfo_init(PyMNNOpInfo *info, PyObject *args, PyObject *kwds);
 static PyMethodDef PyMNNOpInfo_methods[] = {
     {"getName", (PyCFunction)PyMNNOpInfo_getName, METH_VARARGS, "get op name"},
     {"getType", (PyCFunction)PyMNNOpInfo_getType, METH_VARARGS, "get op type"},
-    {"getFlops", (PyCFunction)PyMNNOpInfo_getFlops, METH_VARARGS, "get op flops"},
     {NULL}  /* Sentinel */
 };
 static PyObject* PyMNNOpInfo_getName(PyMNNOpInfo *self, PyObject *args) {
@@ -2474,13 +2465,6 @@ static PyObject* PyMNNOpInfo_getType(PyMNNOpInfo *self, PyObject *args) {
         type = char2Object(self->opInfo->type().c_str());
     }
     return type;
-}
-static PyObject* PyMNNOpInfo_getFlops(PyMNNOpInfo *self, PyObject *args) {
-    PyObject *flops = NULL;
-    if (self->opInfo) {
-        flops = toPyObj(self->opInfo->flops());
-    }
-    return flops;
 }
 static PyTypeObject PyMNNOpInfoType = {
     PyVarObject_HEAD_INIT(NULL, 0)

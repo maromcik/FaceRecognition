@@ -15,13 +15,12 @@ namespace MNN {
 namespace CUDA {
 class BinaryExecution : public Execution {
 public:
-    BinaryExecution(int opType, Backend *backend, int activationType = 0);
+    BinaryExecution(int opType, Backend *backend);
     virtual ~BinaryExecution();
     virtual ErrorCode onExecute(const std::vector<Tensor *> &inputs, const std::vector<Tensor *> &outputs) override;
 
 private:
     int mType;
-    int mActivationType;
 };
 } // namespace CUDA
 } // namespace MNN

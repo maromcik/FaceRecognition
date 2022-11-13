@@ -57,7 +57,7 @@ bool AVX2Functions::init(int cpuFlags) {
         _AVX_ExtraInitFMA(coreFunction);
     }
     // For ImageProcess Functions
-    _SSE_ImageProcessInit(coreFunction, cpuFlags);
+    _SSE_ImageProcessInit(coreFunction);
 #ifdef MNN_AVX512
     if ((cpuFlags & libyuv::kCpuHasAVX512VNNI)
         || (cpuFlags & libyuv::kCpuHasAVX512VL)

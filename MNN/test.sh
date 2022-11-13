@@ -38,7 +38,7 @@ USER_HOME="$(echo -n $(bash -c "cd ~${USER_NAME} && pwd"))"
 
 # detect change
 SOURCE_CHANGE=$(git show --name-only | grep -E "^source/(internal|backend|core|common|cv|geometry|math|plugin|shape|utils)/.*\.(cpp|cc|c|hpp)$" | \
-                grep -Ev "aliyun-log-c-sdk|hiai|tensorrt|BackendRegister|FunctionDispatcher")
+                grep -Ev "aliyun-log-c-sdk|hiai|tensorrt")
 PYMNN_CHANGE=$(git show --name-only | grep -E "^pymnn/.*\.(cpp|cc|c|h|hpp|py)$")
 PY_CHANGE=$(git show --name-only | grep -E "^pymnn/pip_package/MNN/.*\.(py)$")
 OPENCV_CHANGE=$(git show --name-only | grep -E "^tools/cv/.*\.(cpp|cc|c|h|hpp)$")
@@ -48,14 +48,9 @@ failed() {
     exit 1
 }
 
-#############################################################################################
-#                                                                                           #
-#                                  Linux Test Functions                                     #
-#                                                                                           #
-#############################################################################################
 doc_check() {
     echo 'doc_check'
-    # 1. CHECK CMakeLists.txt:
+    # 1. CHECK CMakeLists.txt: check all macro, executable is in doc or not
     cmake_files=$(find tools source demo test benchmark  -name "CMakeLists.txt")
     cmake_files="$cmake_files CMakeLists.txt"
     macros=''
@@ -65,54 +60,20 @@ doc_check() {
         executables="$executables $(cat $cmake_file | grep -oE "add_executable\((.+) " | awk '{print $1}' | awk -F "(" '{print $2}')"
         macros="$macros $(cat $cmake_file | grep -oE "option\((.+) " | awk '{print $1}' | awk -F "(" '{print $2}')"
     done
-    # 1.1 check all macro
     for macro in $macros
     do
         if [ $(grep -c $macro ./docs/compile/cmake.md) -le 0 ]; then
             echo 'DOC CHECK FAILED:' $macro 'not in ./docs/compile/cmake.md'
-            failed
+            failed 
         fi
     done
-    # 1.2 check executable
     for executable in $executables
     do
         if [ $(grep -c $executable ./docs/compile/tools.md) -le 0 ]; then
             echo 'DOC CHECK FAILED:' $executable 'not in ./docs/compile/tools.md'
-            failed
+            failed 
         fi
     done
-    # 2. CHECK Pymnn API:
-    # 2.1 check cv api
-    cv_apis=$(cat pymnn/src/cv.h | grep -oE "        .+, \".+\"" | awk '{ print $1 }' | awk -F ',' '{ print $1 }')
-    cv_apis="$cv_apis $(cat pymnn/pip_package/MNN/cv/__init__.py | grep -oE "def .+\(" | awk '{ print $2 }' | awk -F '(' '{print $1}' | grep -v "__")"
-    for cv_api in $cv_apis
-    do
-        if [ $(grep -c $cv_api ./docs/pymnn/cv.md) -le 0 ]; then
-            echo 'DOC CHECK FAILED:' $cv_api 'not in ./docs/pymnn/cv.md'
-            failed
-        fi
-    done
-    # 2.2 check numpy api
-    # np_apis=$(cat pymnn/pip_package/MNN/numpy/__init__.py | grep -oE "def .+\(" | grep -v "__" | awk '{ print $2 }' | awk -F '(' '{print $1}')
-    # for np_api in $np_apis
-    # do
-    #     if [ $(grep -c $np_api ./docs/pymnn/numpy.md) -le 0 ]; then
-    #         echo 'DOC CHECK FAILED:' $np_api 'not in ./docs/pymnn/numpy.md'
-    #         # failed
-    #     fi
-    # done
-    # 2.3 check expr api
-    expr_apis=$(cat pymnn/src/expr.h | grep -oE "        [a-z_]+, \"" | awk '{ print $1 }' | awk -F ',' '{ print $1 }')
-    for expr_api in $expr_apis
-    do
-        if [ $(grep -c $expr_api ./docs/pymnn/expr.md) -le 0 ]; then
-            echo 'DOC CHECK FAILED:' $expr_api 'not in ./docs/pymnn/expr.md'
-            # failed
-        fi
-    done
-    # 3. CHECK C++ API:
-    # 3.1 check Interpreter
-    # 3.2 check Tensor
 }
 
 py_check() {
@@ -346,7 +307,7 @@ pymnn_test() {
     python3 build_deps.py
     # uninstall original MNN
     pip uninstall --yes MNN MNN-Internal
-    python3 setup.py install --version 1.0 --install-lib=/usr/lib/python3/dist-packages
+    python3 setup.py install --version 1.0
     pymnn_build_wrong=$[$? > 0]
     printf "TEST_NAME_PYMNN_BUILD: PYMNN编译测试\nTEST_CASE_AMOUNT_PYMNN_BUILD: {\"blocked\":0,\"failed\":%d,\"passed\":%d,\"skipped\":0}\n" \
             $pymnn_build_wrong $[1 - $pymnn_build_wrong]
@@ -441,66 +402,12 @@ coverage_report() {
     cd ../.. && rm -rf $testId
 }
 
-#############################################################################################
-#                                                                                           #
-#                                  Android Test Functions                                   #
-#                                                                                           #
-#############################################################################################
-android_unit_test() {
-    adb shell "cd /data/local/tmp/MNN&&export LD_LIBRARY_PATH=.&&./run_test.out all 0 0.002 1 $1"
-    if [ $? -ne 0 ]; then
-        echo '### Android单元测试失败，测试终止！'
-        failed
-    fi
-}
-android_model_test() {
-    fail_num=0
-    pass_num=0
-    models=`ls ~/AliNNModel/OpTestResource/`
-    for model in $models
-    do
-        adb shell "cd /data/local/tmp/MNN&&export LD_LIBRARY_PATH=.&&./testModel.out ../AliNNModel/OpTestResource/$model/temp.bin ../AliNNModel/OpTestResource/$model/input_0.txt ../AliNNModel/OpTestResource/$model/output_0.txt 0 0.002"
-        if [ $? -ne 0 ]; then
-            fail_num=$[$fail_num+1]
-        else
-            pass_num=$[$pass_num+1]
-        fi
-    done
-    
-    models=`ls ~/AliNNModel/TestResource/`
-    for model in $models
-    do
-        adb shell "cd /data/local/tmp/MNN&&export LD_LIBRARY_PATH=.&&./testModel.out ../AliNNModel/TestResource/$model/temp.bin ../AliNNModel/TestResource/$model/input_0.txt ../AliNNModel/TestResource/$model/output.txt 0 0.002"
-        if [ $? -ne 0 ]; then
-            fail_num=$[$fail_num+1]
-        else
-            pass_num=$[$pass_num+1]
-        fi
-    done
-    
-    models=`ls ~/AliNNModel/TestWithDescribe/`
-    for model in $models
-    do
-        adb shell "cd /data/local/tmp/MNN&&export LD_LIBRARY_PATH=.&&./testModelWithDescrisbe.out ../AliNNModel/TestWithDescribe/$model/temp.bin ../AliNNModel/TestWithDescribe/$model/config.txt 0 0.002"
-        if [ $? -ne 0 ]; then
-            fail_num=$[$fail_num+1]
-        else
-            pass_num=$[$pass_num+1]
-        fi
-    done
-    printf "TEST_NAME_ANDROID_MODEL_TEST_$1: Android_$1模型测试\nTEST_CASE_AMOUNT_ANDROID_MODEL_TEST_$1: {\"blocked\":0,\"failed\":$fail_num,\"passed\":$pass_num,\"skipped\":0}\n"
-    if [ $fail_num -ne 0 ]; then
-        echo '### Android模型测试失败，测试终止！'
-        failed
-    fi
-}
-
 android_test() {
     pushd project/android
     # 1. build Android32
     mkdir build_32
     pushd build_32
-    ../build_32.sh -DMNN_BUILD_TRAIN=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    ../build_32.sh -DMNN_BUILD_TRAIN=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     android32_build_wrong=$[$? > 0]
     mnn32_size=$(ls -lh libMNN.so | awk '{print $5}')
     expr32_size=$(ls -lh libMNN_Express.so | awk '{print $5}')
@@ -510,15 +417,19 @@ android_test() {
         echo '### Android32编译失败，测试终止！'
         failed
     fi
-    ../updateTest.sh
-    android_unit_test 32
-    android_model_test 32
+
+    # 2. test Androird32
+    #python3 ../../../tools/script/AndroidTest.py ~/AliNNModel 32 unit
+    #if [ $? -ne 0 ]; then
+    #    echo '### AndroidTest32测试失败，测试终止！'
+    #    failed
+    #fi
     popd
 
     # 3. build Android64
     mkdir build_64
     pushd build_64
-    ../build_64.sh -DMNN_BUILD_TRAIN=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    ../build_64.sh -DMNN_BUILD_TRAIN=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     android64_build_wrong=$[$? > 0]
     mnn64_size=$(ls -lh libMNN.so | awk '{print $5}')
     expr64_size=$(ls -lh libMNN_Express.so | awk '{print $5}')
@@ -530,9 +441,11 @@ android_test() {
     fi
 
     # 4. test Android64
-    ../updateTest.sh
-    android_unit_test 64
-    android_model_test 64
+    #python3 ../../../tools/script/AndroidTest.py ~/AliNNModel 64 unit
+    #if [ $? -ne 0 ]; then
+    #    echo '### AndroidTest64测试失败，测试终止！'
+    #    failed
+    #fi
     popd
     popd
 }
@@ -550,7 +463,6 @@ case "$1" in
         pymnn_test
         ;;
     linux)
-        doc_check
         static_check
         py_check
         linux_build 1

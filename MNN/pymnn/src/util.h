@@ -371,25 +371,13 @@ static inline bool isFloat(PyObject* obj) {
 static inline bool isNone(PyObject* obj) {
     return (obj == Py_None);
 }
-static inline bool isPySequence(PyObject* obj) {
-    // ndarray in PySequence_Check is true;
-    // when PYMNN_NUMPY_USABLE is close will get some wrong judge
-    // use isPySequence replace PySequence_Check
-    return PyTuple_Check(obj) || PyList_Check(obj) || PyBytes_Check(obj);
-}
-static inline int PySequenceSize(PyObject* obj) {
-    if (PyTuple_Check(obj)) return PyTuple_Size(obj);
-    if (PyList_Check(obj)) return PyList_Size(obj);
-    if (PyBytes_Check(obj)) return PyBytes_Size(obj);
-    return 0;
-}
 static inline bool isVals(PyObject* obj) {
     return
 #ifdef PYMNN_NUMPY_USABLE
     PyArray_Check(obj) ||
 #endif
     PyCapsule_CheckExact(obj) ||
-    isPySequence(obj);
+    PySequence_Check(obj);
 }
 template <bool (*Func)(PyObject*)>
 static bool isVec(PyObject* obj) {

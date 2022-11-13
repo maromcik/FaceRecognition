@@ -5,7 +5,6 @@
 - [模型转换时有Error信息](faq.html#reshape-error)
 - [模型量化后为什么比浮点慢](faq.html#id14)
 - [输入输出的elementSize与实际有区别](faq.html#tensor-elementsize)
-- [MNN模型如何加密](faq.html#id18)
 
 ## 编译相关
 ### 环境需求
@@ -154,10 +153,8 @@ const float* outputPtr = output->readMap<float>();
 ```
 ### compute shape error for XXX
 
-- 输入形状不正确
 - MNN 推理过程分形状计算-几何计算-内容计算三步，前两步在 resizeSession 中完成，在 createSession 时，会用初始设定的输入大小进行一次 resizeSession ，若初始 shape 设定不对，则会在某个算子报 shape 计算的 error ，重新设置输入 tensor 的大小并 resizeSession 即可
 - 在导出 Onnx 时，shape 没设成 dynamic ，导致部分参数写死，变动大小后无法 resize 网络
-- 如果确定输入形状正确，并且执行了`resizeTensor`和`resizeSession`；可以打开`source/shape/SizeComputer.cpp`中的宏`// #define MNN_DEBUG_TENSOR_SIZE`定义，然后执行模型推理；打开宏之后可以看到每一层的形状信息，可以逐层进行Debug
 
 ### Android 设备无法查看日志
 Android 系统有两类打印日志的方式: printf 和 logcat. 默认 MNN 的编译脚本使用 printf，这样方便在命令行中调试（[https://www.yuque.com/mnn/cn/tool_test](https://www.yuque.com/mnn/cn/tool_test)），集成到 App 上时，用 cmake  -DMNN_USE_LOGCAT=ON 将打印日志的方式改成 logcat 即可用 adb logcat 查看
@@ -247,13 +244,3 @@ GPU 后端调用 copy 的时间包含两个部分
    - x64 + vnni 指令，量化计算有 sdot 指令，明显快于 FP32 ，编译 MNN 时需要开启 MNN_AVX512 以支持这个指令，一般相比 AVX512 的浮点运算快 30%
    - ARM v7a / ARMv8 ：量化计算采用 int8 乘加到 int16，再双加到 int32 的方式，计算效率略快于浮点（一般 30% 左右提升）。
    - ARMv8.2 + 量化计算有 sdot 指令，但同时 FP32 相对之前架构发射数也提升了一倍，编译 MNN 打开 MNN_ARM82 启用 sdot 指令则量化计算更快，否则 FP32 更快，理想情况比 FP32 快1倍以上，比 FP16 快 20%。
-
-## 其他问题
-### MNN模型如何加密
-加密与破解是攻防的较量，端侧加密很难做到绝对安全。
-可以通过构造独有的模型格式来增加反向的难度，按照以下步骤操作可以得到独特的模型格式：
-1. 针对`schema/default/*.fbs`下的文件，对参数顺序，枚举类顺序进行重新排序；比如：可以重新调整`MNN.fbs`中`OpType`的顺序；重新调整`CaffeOp.fbs`中`Convolution2DCommon`成员变量的顺序；
-2. 执行`schema/generate.sh`重新生成`flatbuffers`头文件；
-3. 重新编译`MNN`库文件， `Convert`等所有工具；
-4. 使用新的工具重新转换模型；
-5. 在端侧使用新模型和新的`MNN`库文件进行部署；

@@ -19,7 +19,6 @@
 #include "core/RuntimeFactory.hpp"
 #include "core/Session.hpp"
 #include <MNN/AutoTime.hpp>
-#include "backend/cpu/CPUBackend.hpp"
 
 #ifdef MNN_INTERNAL_ENABLED
 #include "internal/logging/Log.hpp"
@@ -448,10 +447,6 @@ void Interpreter::resizeSession(Session* session, int needRelloc) {
     if (1 == needRelloc) {
         session->setNeedMalloc(true);
     }
-
-    CPURuntime* runtime = static_cast<CPURuntime*>(session->getCPURuntime());
-    runtime->clearReuseCopyTensorMap();
-
     session->resize();
 }
 

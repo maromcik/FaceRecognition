@@ -26,7 +26,7 @@ Inside Alibaba, [MNN](https://mp.weixin.qq.com/s/5I1ISpx8lQqvCS8tGd6EJw) works a
 
 
 ## Documentation and Workbench
-MNN's docs are in placed in [Yuque docs here](https://www.yuque.com/mnn/en) and [Read the docs](https://mnn-docs.readthedocs.io/en/latest).
+MNN's docs are in placed in [Yuque docs here](https://www.yuque.com/mnn/en).
 
 MNN Workbench could be downloaded from [MNN's homepage](http://www.mnn.zone), which provides pretrained models, visualized training tools, and one-click deployment of models to devices.
 
@@ -73,14 +73,13 @@ The Architecture / Precision MNN supported is shown below:
 |  | x86/x64-AVX2 | S | B | B | A |
 |  | x86/x64-AVX512 | S | B | B | S |
 |  | ARMv7a | S | S (ARMv8.2) | S | S |
-|  | ARMv8 | S | S (ARMv8.2) | S(ARMv8.6) | S |
+|  | ARMv8 | S | S (ARMv8.2) | S | S |
 | GPU | OpenCL | A | S | C | C |
 |  | Vulkan | A | A | C | C |
 |  | Metal | A | S | C | C |
 |  | CUDA | A | S | C | C |
-| NPU | CoreML | B | B | C | C |
+| NPU | CoreML | B | C | C | C |
 |  | HIAI | B | C | C | B |
-|  | NNAPI | B | B | C | C |
 
 
 

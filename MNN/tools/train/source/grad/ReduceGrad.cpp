@@ -45,9 +45,9 @@ public:
         }
 
         if (forwardOp->main.AsReductionParam()->operation == ReductionType_MEAN) {
-            auto gradCount = _Size(outputDiff);
-            auto inputCount = _Size(inputs[0]);
-            outputDiff = _Multiply(outputDiff, _Cast<float>(gradCount) / _Cast<float>(inputCount));
+            float gradCount  = outputDiff->getInfo()->size;
+            float inputCount = inputs[0]->getInfo()->size;
+            outputDiff       = _Multiply(outputDiff, _Scalar<float>((float)gradCount / (float)inputCount));
         }
 
         if (forwardOp->main.AsReductionParam()->operation == ReductionType_MAXIMUM) {

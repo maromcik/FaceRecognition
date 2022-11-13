@@ -22,9 +22,6 @@ extern void registerMetalRuntimeCreator();
 #if MNN_COREML_ENABLED
 extern void registerCoreMLRuntimeCreator();
 #endif
-#if MNN_NNAPI_ENABLED
-extern void registerNNAPIRuntimeCreator();
-#endif
 
 static std::once_flag s_flag;
 void registerBackend() {
@@ -39,9 +36,6 @@ void registerBackend() {
 #endif
 #if MNN_COREML_ENABLED
         registerCoreMLRuntimeCreator();
-#endif
-#ifdef MNN_NNAPI_ENABLED
-        registerNNAPIRuntimeCreator();
 #endif
 #if MNN_METAL_ENABLED
         registerMetalRuntimeCreator();

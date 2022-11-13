@@ -57,8 +57,7 @@ def_enum(PowerMode, PowerMode,
 def_enum(PrecisionMode, PrecisionMode,
         PrecisionMode::Precision_Normal, "Normal",
         PrecisionMode::Precision_High, "High",
-        PrecisionMode::Precision_Low, "Low",
-        PrecisionMode::Precision_Low_BF16, "Low_BF16"
+        PrecisionMode::Precision_Low, "Low"
         )
 // class Var
 typedef struct {
@@ -626,15 +625,6 @@ static void PyMNNVar_dealloc(PyMNNVar *self) {
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 static PyObject* PyMNNVar_repr(PyObject *self) {
-    PyMNNVar* var = (PyMNNVar*)self;
-    if (var->var == nullptr) {
-        return toPyObj("None Var");
-    }
-    auto info = (*(var->var))->getInfo();
-    const void* ptr = (*(var->var))->readMap<void>();
-    if (info == nullptr || ptr == nullptr) {
-        return toPyObj((*(var->var))->name());
-    }
 #ifdef PYMNN_NUMPY_USABLE
     auto content = PyMNNVar_read((PyMNNVar*)self, NULL);
 #else
@@ -1244,10 +1234,10 @@ static PyObject* PyMNNExpr_const(PyObject *self, PyObject *args, PyObject *kwarg
     PyObject *value, *shapes, *format = nullptr /* NCHW */, *type = nullptr /* DType_FLOAT */;
     static char *kwlist[] = { "value_list", "shape", "data_format", "dtype", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|OO", kwlist, &value, &shapes, &format, &type)) {
-        PyMNN_ERROR("const require args: (ndarray/list/tuple/bytes/PyCapsule/int_addr, [ints], |data_format, dtype)");
+        PyMNN_ERROR("const require args: (ndarray/list/tuple/bytes/PyCapsule, [ints], |data_format, dtype)");
     }
-    if ((!isVals(value) && !isInt(value)) || !isInts(shapes) || (format != nullptr && !isdata_format(format)) || (type != nullptr && !isdtype(type))) {
-        PyMNN_ERROR("const require args: (ndarray/list/tuple/bytes/PyCapsule/int_addr, [ints], |data_format, dtype)");
+    if (!isVals(value) || !isInts(shapes) || (format != nullptr && !isdata_format(format)) || (type != nullptr && !isdtype(type))) {
+        PyMNN_ERROR("const require args: (ndarray/list/tuple/bytes/PyCapsule, [ints], |data_format, dtype)");
     }
     auto data_format = (format == nullptr ? NCHW : toEnum<Dimensionformat>(format));
     auto dtype = (type == nullptr ? DType_FLOAT : toEnum<DType>(type));
@@ -1269,12 +1259,6 @@ static PyObject* PyMNNExpr_const(PyObject *self, PyObject *args, PyObject *kwarg
         bool need_free = false;
         if (PyCapsule_CheckExact(value)) {
             data = PyCapsule_GetPointer(value, NULL);
-        } else if (isInt(value)) {
-            data = PyLong_AsVoidPtr(value);
-        } else if (PyBytes_Check(value)) {
-            int64_t bytesize = PyBytes_Size(value);
-            data = toPtr(value, DType_UINT8, bytesize);
-            need_free = true;
         } else {
             data = toPtr(value, dtype, total_length);
             need_free = true;
@@ -1535,7 +1519,7 @@ static PyObject* PyMNNExpr_crop_and_resize(PyObject *self, PyObject *args) {
              *method = nullptr /* BILINEAR */;
     float extrapolation_value = 0.0f;
     if (PyArg_ParseTuple(args, "OOOO|Of", &image, &boxes, &box_ind,
-                         &crop_size, &method, &extrapolation_value)
+                         &crop_size, &method, extrapolation_value)
         && isVar(image) && isVar(boxes) && isVar(box_ind)
         && isVar(crop_size)
         && (method == nullptr || isInterp_Method(method))) {

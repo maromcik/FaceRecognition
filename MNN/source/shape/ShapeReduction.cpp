@@ -32,37 +32,40 @@ public:
             output->buffer().dimensions = 0;
             return true;
         }
-        uint8_t reduceMask[MNN_MAX_TENSOR_DIM];
-        ::memset(reduceMask, 0, sizeof(uint8_t) * MNN_MAX_TENSOR_DIM);
+        std::set<int> reduceDimSet;
         if (nullptr != reduce->dim()) {
             for (int i = 0; i < reduce->dim()->size(); ++i) {
-                reduceMask[_getRealAxis(reduce->dim()->data()[i], inputs[0]->dimensions())] = 1;
+                reduceDimSet.insert(_getRealAxis(reduce->dim()->data()[i], inputs[0]->dimensions()));
             }
         } else {
             auto input1 = inputs[1];
             auto size   = input1->elementSize();
             auto dims   = input1->host<int32_t>();
             for (int i = 0; i < size; ++i) {
-                reduceMask[_getRealAxis(dims[i], inputs[0]->dimensions())] = 1;
+                reduceDimSet.insert(_getRealAxis(dims[i], inputs[0]->dimensions()));
             }
         }
 
         auto input                = inputs[0];
         const int inputDimensions = input->dimensions();
-
-        int offset = 0;
-        for (int i = 0; i < inputDimensions; ++i) {
-            if (1 == reduceMask[i]) {
-                if (reduce->keepDims()) {
-                    output->buffer().dim[offset].extent = 1;
-                    offset++;
-                }
-                continue;
-            }
-            output->buffer().dim[offset].extent = input->length(i);
-            offset++;
+        if (reduceDimSet.find(-1) != reduceDimSet.end()) {
+            // dim set have -1 which mean applying reduction on last dimension
+            reduceDimSet.erase(-1);
+            reduceDimSet.insert(inputDimensions - 1);
         }
-        output->buffer().dimensions = offset;
+
+        std::vector<int> newDims;
+        for (int i = 0; i < inputDimensions; ++i) {
+            if (reduceDimSet.find(i) == reduceDimSet.end()) {
+                newDims.push_back(input->length(i));
+            } else if (reduce->keepDims()) {
+                newDims.push_back(1);
+            }
+        }
+        output->buffer().dimensions = (int)newDims.size();
+        for (int i = 0; i < newDims.size(); ++i) {
+            output->buffer().dim[i].extent = newDims[i];
+        }
         TensorUtils::getDescribe(outputs[0])->dimensionFormat = TensorUtils::getDescribe(inputs[0])->dimensionFormat;
 
         return true;

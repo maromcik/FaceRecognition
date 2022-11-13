@@ -15,7 +15,7 @@ namespace MNN {
 TRTBinary::TRTBinary(Backend *b, const Op *op, const std::vector<Tensor *> &inputs,
                      const std::vector<Tensor *> &outputs)
     : MNN::TRTCommonExecution(b, op) {
-    mActivationType = op->main_as_BinaryOp()->activationType();
+    // Do nothing
 }
 
 std::vector<ITensor *> TRTBinary::onEncode(const std::vector<ITensor *> &xOp) {
@@ -34,13 +34,7 @@ std::vector<ITensor *> TRTBinary::onEncode(const std::vector<ITensor *> &xOp) {
         MNN_PRINT("binary plugin == nullptr !!!\n");
     }
     mTrtBackend->pushReleaseLayer(binaryPlugin);
-
-    auto output = plugin->getOutput(0);
-    if (mActivationType == 1) {
-        mActivationLayer = mTrtBackend->getNetwork()->addActivation(*output, ActivationType::kRELU);
-        return {mActivationLayer->getOutput(0)};
-    }
-    return {output};
+    return {plugin->getOutput(0)};
 }
 
 TRTCreatorRegister<TypedCreator<TRTBinary>> __binary_op(OpType_BinaryOp);

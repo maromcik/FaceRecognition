@@ -27,7 +27,7 @@ Interpreter是MNN V2接口中模型数据的持有者。使用MNN推理时，有
 |    key        |  value  |      说明         |
 |:--------------|:--------|:-----------------|
 | backend     | `str` or `int` | 可选值：`"CPU"或0`(默认), `"OPENCL"或3`,`"OPENGL"或6`, `"VULKAN"或7`, `"METAL"或1`, `"TRT"或9`, `"CUDA"或2`, `"HIAI"或8`  |
-| precision   | `str` | 可选值：`"normal"`(默认), `"low"`,`"high","lowBF"` |
+| precision   | `str` | 可选值：`"normal"`(默认), `"low"`,`"high"` |
 | numThread   | `int` or `long` | `value`为推理线程数，只在 CPU 后端下起作用 |
 | saveTensors | `tuple` of `str` | `value`为想要保留成为输出层的`tensorName` |
 | inputPaths  | `tuple` of `str` | 推理路径的起点，输入`tensorName` |
@@ -45,7 +45,7 @@ Interpreter是MNN V2接口中模型数据的持有者。使用MNN推理时，有
 根据配置创建[Session](Session.md)，返回一个`Session`对象。
 
 参数：
-- `config:dict` 创建推理会话的配置，含义同[createRuntime](Interpreter.html#createruntime-config)方法
+- `config:dict` 创建推理会话的配置，含义同`createRuntime`方法
 - `runtime:PyCapsule` 指定的runtime信息，如果不指定，则使用config中的配置创建runtime
 
 返回：持有推理会话数据的Session对象

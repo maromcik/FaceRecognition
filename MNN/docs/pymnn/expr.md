@@ -18,12 +18,10 @@ expr是MNN的表达式模块，包含了一系列的表达式函数能够构造M
 ---
 ### `const(value_list, shape, data_format, dtype)`
 根据输入数据创建一个`Const`类型的`Var`；该函数是创建的`Var`的最基本函数，
-能够将`list`，`tuple`，`bytes`，`ndarray`，`PyCapsule`，`int指针`等格式的数据转换成`Var`
-
-*注意：`value_list`仅在PYMNN_NUMPY_USABLE打开的情况下支持`ndarray`，移动端默认关闭*
+能够将`list`，`tuple`，`bytes`，`ndarray`，`PyCapsule`等格式的数据转换成`Var`
 
 参数：
-- `value_list:ndarray/list/tuple/bytes/PyCapsule/int_addr` 输入数据
+- `value_list:ndarray/list/tuple/bytes/PyCapsule` 输入数据
 - `shape:[int]` 构造`Var`的形状
 - `data_format:data_format` 数据排布格式，参考[data_format](Var.html#data-format)
 - `dtype:dtype` 数据类型，参考[dtype](Var.html#dtype)
@@ -44,8 +42,6 @@ array([2, 3, 4], dtype=int32)
 array([97, 98, 99], dtype=uint8)
 >>> expr.const(MNN.Tensor([2, 3]).getData(), [2], expr.NCHW, expr.int) # PyCapsule
 array([2, 3], dtype=int32)
->>> expr.const(np.arange(4.0).astype(np.float32).__array_interface__['data'][0], [4], expr.NCHW, expr.float) # int_addr 该方法要求ndarray内存必须连续
-array([0., 1., 2., 3.], dtype=float32)
 ```
 ---
 ### `set_thread_number(numberThread)`
@@ -1336,94 +1332,6 @@ array([0, 1])
 array(0)
 >>> expr.reduce_all([[0,1],[0,3]], 0)
 array([0, 1])
-```
-
----
-### `eltwise_prod(x, y, coeff)`
-逐元素对输入的变量执行乘法运算
-
-参数：
-- `x:Var_like` 输入变量
-- `y:Var_like` 输入变量
-- `coeff:[float]` 系数，目前仅支持`[1.,0.]`或`[]/[0.]`
-
-返回：`x*y`, 当`coeff=[1.,0.]`时返回`x`
-
-返回类型：`Var`
-
-示例：
-
-```python
->>> expr.eltwise_prod([1., 2., 3.], [2., 2., 2.], [])
-array([2., 4., 6.], dtype=float32)
->>> expr.eltwise_prod([1., 2., 3.], [2., 2., 2.], [1., 0.])
-array([1., 2., 3.], dtype=float32)
-```
-
----
-### `eltwise_sum(x, y, coeff)`
-逐元素对输入的变量执行加法运算
-
-参数：
-- `x:Var_like` 输入变量
-- `y:Var_like` 输入变量
-- `coeff:[float]` 系数，目前仅支持`[1.,0.]`或`[]/[0.]`
-
-返回：`x+y`, 当`coeff=[1.,0.]`时返回`x`
-
-返回类型：`Var`
-
-示例：
-
-```python
->>> expr.eltwise_sum([1., 2., 3.], [2., 2., 2.], [])
-array([3., 4., 5.], dtype=float32)
->>> expr.eltwise_sum([1., 2., 3.], [2., 2., 2.], [1., 0.])
-array([1., 2., 3.], dtype=float32)
-```
-
----
-### `eltwise_sub(x, y, coeff)`
-逐元素对输入的变量执行减法运算
-
-参数：
-- `x:Var_like` 输入变量
-- `y:Var_like` 输入变量
-- `coeff:[float]` 系数，目前仅支持`[1.,0.]`或`[]/[0.]`
-
-返回：`x-y`, 当`coeff=[1.,0.]`时返回`x`
-
-返回类型：`Var`
-
-示例：
-
-```python
->>> expr.eltwise_sub([1., 2., 3.], [2., 2., 2.], [])
-array([-1.,  0.,  1.], dtype=float32)
->>> expr.eltwise_sub([1., 2., 3.], [2., 2., 2.], [1., 0.])
-array([1., 2., 3.], dtype=float32)
-```
-
----
-### `eltwise_max(x, y, coeff)`
-逐元素对输入的变量执行比较运算，取最大值
-
-参数：
-- `x:Var_like` 输入变量
-- `y:Var_like` 输入变量
-- `coeff:[float]` 系数，目前仅支持`[1.,0.]`或`[]/[0.]`
-
-返回：`max(x,y)`, 当`coeff=[1.,0.]`时返回`x`
-
-返回类型：`Var`
-
-示例：
-
-```python
->>> expr.eltwise_max([1., 2., 3.], [2., 2., 2.], [])
-array([2., 2., 3.], dtype=float32)
->>> expr.eltwise_max([1., 2., 3.], [2., 2., 2.], [1., 0.])
-array([1., 2., 3.], dtype=float32)
 ```
 
 ---
@@ -2885,81 +2793,3 @@ array([[1, 0],
 array([0, 2], dtype=int32)
 array([5., 4.5])
 ```
-
----
-### `raster(vars, region, shape)`
-使用`Raster`创建一个映射关系，`Raster`是表示内存映射的元算子；
-`region`使用`[int]`来描述；其表示了从`var`到结果的内存映射关系，对应的C++数据结构如下：
-```cpp
-struct View {
-    int32_t offset = 0;
-    int32_t stride[3] = {1, 1, 1};
-};
-
-struct Region {
-    View src;
-    View dst;
-    int32_t size[3] = {1, 1, 1};
-};
-```
-在Python中使用11个`int`来表示Region，顺序为：`src_offset, src_stride[3], dst_offset, dst_stride[3], size[3]`；多个region则继续增加int数目，总数目应该为11的倍数；并且region的数目应该与vars的数目相等
-
-参数：
-- `var : [Var]` 输入变量，内存映射的数据来源
-- `region : [int]` 表示内存映射关系
-- `shape : [int]` 输出变量的形状
-
-返回：内存映射后的变量
-
-返回类型：`Var`
-
-示例：
-
-```python
->>> var = expr.const([1., 2., 3. ,4.], [2, 2])
->>> expr.raster([var], [0, 4, 1, 2, 0, 4, 2, 1, 1, 2, 2], [2, 2]) # do transpose
-array([[1., 3.],
-       [2., 4.]], dtype=float32)
-```
-
----
-### `histogram(input, binNum, minVal, maxVal)`
-计算输入变量在指定范围内的直方图分布
-
-参数：
-- `input : var_like` 输入变量
-- `binNum : int` 直方图桶的个数
-- `minVal : int` 直方图计算的最小值
-- `maxVal : int` 直方图计算的最大值
-
-返回：直方图统计结果
-
-返回类型：`Var`
-
-示例：
-
-```python
->>> expr.histogram(expr.range(0., 10.0, 1.0), 5, 1, 9)
-array([2., 2., 1., 2., 2.], dtype=float32)
-```
-
----
-### `detection_post_process(encode_boxes, class_predictions, anchors, num_classes, max_detections, max_class_per_detection, detections_per_class, nms_threshold, iou_threshold, use_regular_nms, centersize_encoding)`
-SSD检测模型后处理函数
-
-参数：
-- `encode_boxes : Var` 检测框坐标
-- `class_predictions : Var` 分类结果概率
-- `anchors : Var` 锚点
-- `num_classes : int` 分类个数
-- `max_detections : int` 最大检测值
-- `max_class_per_detection : int` 每个检测的最大种类
-- `detections_per_class : int` 每个类别的检测结果
-- `nms_threshold : float` nms阈值
-- `iou_threshold : float` iou阈值
-- `use_regular_nms : bool` 是否使用常规nms，目前仅支持`False`
-- `centersize_encoding : [float]` 中心尺寸编码
-
-返回：后处理结果
-
-返回类型：`Var`

@@ -22,8 +22,6 @@ public:
 
 private:
     IConstantLayer *const_layer;
-    int mActivationType = 0;
-    IActivationLayer *mActivationLayer{nullptr};
 };
 
 } // namespace MNN

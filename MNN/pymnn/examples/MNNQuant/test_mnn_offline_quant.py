@@ -9,7 +9,6 @@ from PIL import Image
 
 nn = MNN.nn
 F = MNN.expr
-F.lazy_eval(True)
 
 
 # adapted from pycaffe

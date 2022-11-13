@@ -78,10 +78,6 @@ public:
         mNeedMalloc = flag;
     }
 
-    Runtime* getCPURuntime() {
-        return mRuntime.second.get();
-    }
-
 public:
     /**
      * @brief get backend that create the tensor.

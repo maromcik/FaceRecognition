@@ -174,8 +174,7 @@ struct BackendConfig {
     enum PrecisionMode {
         Precision_Normal = 0,
         Precision_High,
-        Precision_Low,
-        Precision_Low_BF16
+        Precision_Low
     };
     
     PrecisionMode precision = Precision_Normal;
@@ -192,8 +191,7 @@ struct BackendConfig {
 **precision 为 Low 时，使用 fp16 存储与计算**，计算结果与CPU计算结果有少量误差，实时性最好；precision 为 Normal 时，使用 fp16存储，计算时将fp16转为fp32计算，计算结果与CPU计算结果相近，实时性也较好；precision 为 High 时，使用 fp32 存储与计算，实时性下降，但与CPU计算结果保持一致。
 
 后端 CPU
-**precision 为 Low 时，根据设备情况开启 FP16 计算**
-**precision 为 Low_BF16 时，根据设备情况开启 BF16 计算**
+**precision 为 Low 时，根据设备情况开启 FP16 或 BF16 计算**
 
 `sharedContext`用于自定义后端，用户可以根据自身需要赋值。
 
@@ -547,8 +545,6 @@ const std::map<std::string, Tensor*>& getSessionOutputAll(const Session* session
 
 在只有一个输出tensor时，可以在调用`getSessionOutput`时传入NULL以获取tensor。
 
-**注意：当`Session`析构之后使用`getSessionOutput`获取的`Tensor`将不可用**
-
 ### 拷贝数据
 **不熟悉MNN源码的用户，必须使用这种方式获取输出！！！**
 NCHW （适用于 Caffe / TorchScript / Onnx 转换而来的模型）示例：
@@ -589,10 +585,3 @@ auto index = outputTensor->host<float>()[1];
 `Tensor`上最简洁的输出方式是直接读取`host`数据，但这种使用方式仅限于CPU后端，其他后端需要通过`deviceid`来读取数据。另一方面，用户需要自行处理`NC4HW4`、`NHWC`数据格式上的差异。
 
 **对于非CPU后端，或不熟悉数据布局的用户，宜使用拷贝数据接口。**
-
-## 示例代码
-完整的示例代码可以参考`demo/exec/`文件夹中的以下源码文件：
-- `pictureRecognition.cpp` 使用`Session`执行模型推理进行图片分类，使用`ImageProcess`进行前处理
-- `multiPose.cpp` 使用`Session`执行模型推理进行姿态检测，使用`ImageProcess`进行前处理
-- `segment.cpp` 使用`Session`执行模型推理进行图像分割，使用`ImageProcess`进行前处理，`Expr`进行后处理
-- `pictureRotate.cpp` 使用`ImageProcess`进行图像处理

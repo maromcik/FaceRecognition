@@ -12,18 +12,6 @@
 #include <stdint.h>
 #include <array>
 #include <algorithm>  // supply std::max and std::min
-
-#ifdef MNN_USE_NEON
-#include <arm_neon.h>
-#endif
-#ifdef MNN_USE_SSE
-#if defined(_MSC_VER)
-#include <intrin.h>
-#else
-#include <x86intrin.h>
-#endif
-#endif
-
 namespace MNN {
 namespace Math {
 
@@ -93,12 +81,6 @@ struct VecHalf {
         }
     }
 
-    VecHalf(float v0, float v1, float v2, float v3) {
-        value[0] = v0;
-        value[1] = v1;
-        value[2] = v2;
-        value[3] = v3;
-    }
     VecHalf(std::array<float, N>&& v) {
         value = std::move(v);
     }
@@ -178,6 +160,11 @@ struct VecHalf {
 };
 
 #if defined(MNN_USE_SSE)
+#if defined(_MSC_VER)
+#include <intrin.h>
+#else
+#include <x86intrin.h>
+#endif
 
 template<>
 struct VecHalf<4> {
@@ -323,6 +310,7 @@ struct VecHalf<4> {
 #endif
 
 #if defined(MNN_USE_NEON)
+#include <arm_neon.h>
 
 template<>
 struct VecHalf<4> {
