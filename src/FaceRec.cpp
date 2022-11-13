@@ -15,9 +15,9 @@
  * @param stream - camera stream
  */
 FaceRec::FaceRec(const std::string &server_ip, int port, const std::string &camera, const std::string &stream) {
-    this->server_ip = server_ip.c_str();
+    this->server_ip = server_ip;
     this->port = port;
-    this->camera = camera.c_str();
+    this->camera = camera;
     this->stream = stream;
 }
 
@@ -30,11 +30,10 @@ FaceRec::FaceRec(const std::string &server_ip, int port, const std::string &came
 void FaceRec::run(const std::string &winname) {
     std::cout << "Face Recognition is starting" << std::endl;
     cv::VideoCapture cap;
+    std::cout << "stream: " << stream << std::endl;
     if (stream.length() == 1) {
-        std::cout << "stream: " << std::stoi(stream) << std::endl;
         cap = cv::VideoCapture(std::stoi(stream));
     } else {
-        std::cout << "stream: " << stream << std::endl;
         cap = cv::VideoCapture(stream);
     }
     if (!cap.isOpened()) {
@@ -142,8 +141,7 @@ int FaceRec::send_data(const cv::Mat &img) {
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
-
-    if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, server_ip.c_str(), &serv_addr.sin_addr) <= 0) {
         printf("\nInvalid address/ Address not supported \n");
         return -1;
     }
@@ -153,8 +151,8 @@ int FaceRec::send_data(const cv::Mat &img) {
         return -1;
     }
 
-    std::cout << camera << std::endl;
-    send(sock, camera, 7, 0);
+    std::cout << camera.c_str();
+    send(sock, camera.c_str(), 7, 0);
     send(sock, jpg_img.data(), jpg_img.size(), 0);
     printf("Image sent successfully \n");
     // closing the connected socket

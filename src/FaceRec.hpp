@@ -29,9 +29,9 @@ public:
     #endif
 
 private:
-    const char* server_ip;
+    std::string server_ip;
     int port;
-    const char* camera;
+    std::string camera;
     std::string stream;
 
     std::string mnn_path = "../model/version-RFB/RFB-320.mnn";

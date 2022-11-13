@@ -14,7 +14,7 @@ using namespace std;
 UltraFace::UltraFace(const std::string &mnn_path,
                      int input_width, int input_length, int num_thread_,
                      float score_threshold_, float iou_threshold_, int topk_) {
-    num_thread = num_thread_;
+    num_thread = 4;
     score_threshold = score_threshold_;
     iou_threshold = iou_threshold_;
     in_w = input_width;

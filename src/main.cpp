@@ -41,6 +41,7 @@ int main() {
         std::cout << "Thread: " << i << std::endl;
         // A Dlib function, separates csv values in the configuration file
         auto separated = split(config[i], ";");
+        std::cout << separated[0] << " " << separated[1] << std::endl;
         pool.emplace_back(&FaceRec::run, FaceRec(config[0], 5555, separated[0], separated[1]), separated[0]);
     }
 
