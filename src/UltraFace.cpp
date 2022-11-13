@@ -67,8 +67,8 @@ UltraFace::UltraFace(const std::string &mnn_path,
 }
 
 UltraFace::~UltraFace() {
-    ultraface_interpreter->releaseModel();
-    ultraface_interpreter->releaseSession(ultraface_session);
+//    ultraface_interpreter->releaseModel();
+//    ultraface_interpreter->releaseSession(ultraface_session);
 }
 
 int UltraFace::detect(cv::Mat &raw_image, std::vector<FaceInfo> &face_list) {

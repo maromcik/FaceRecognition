@@ -18,6 +18,8 @@
 class FaceRec {
 public:
     FaceRec(const std::string& server_ip, int port, const std::string& camera, const std::string& stream);
+
+
     void run(const std::string& winname);
     cv::Mat process(cv::Mat frame);
     int send_data(const cv::Mat& img);

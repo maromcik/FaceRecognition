@@ -189,7 +189,6 @@ cv::Mat FaceRec::convert_color(matrix<rgb_pixel> img) {
     return out_img;
 }
 
-
 /**
  * Compares face descriptors, used on face recognition testing.
  * Calculates the Euclidean distance. In Python on the server it is implemented with the np.linalg.norm() function.
