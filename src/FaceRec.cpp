@@ -104,12 +104,16 @@ cv::Mat FaceRec::process(cv::Mat frame) {
               << std::chrono::duration_cast<std::chrono::milliseconds>(e1 - s1).count()
               << " ms" << std::endl;
 #endif
+#ifdef DEBUG
         auto s4 = std::chrono::steady_clock::now();
+#endif
         send_data(convert_color(sp));
+#ifdef DEBUG
         auto e4 = std::chrono::steady_clock::now();
         std::cout << "Socket time: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(e4 - s4).count()
                   << " ms" << std::endl;
+#endif
 #ifdef RUNWITHGUI
         cv::Point pt1(face.x1, face.y1);
         cv::Point pt2(face.x2, face.y2);
