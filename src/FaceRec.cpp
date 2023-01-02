@@ -139,7 +139,7 @@ int FaceRec::send_data(const cv::Mat &img) {
     struct sockaddr_in serv_addr;
     auto jpg_img = encode_img(img);
 
-    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("\n Socket creation error \n");
         return -1;
     }
