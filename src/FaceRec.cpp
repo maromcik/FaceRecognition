@@ -163,7 +163,7 @@ int FaceRec::send_data(const cv::Mat &img) {
     std::cout << "Camera: " << camera.c_str();
     send(sock, camera.c_str(), 7, 0);
     send(sock, jpg_img.data(), jpg_img.size(), 0);
-    printf("image sent successfully \n");
+    printf(" image sent successfully \n");
     // closing the connected socket
     close(client_fd);
     close(sock);
