@@ -1,4 +1,0 @@
-# ImageProcess
-```cpp
-class ImageProcess
-```
