@@ -12,4 +12,4 @@ shift $(( OPTIND - 1 ))
 if [ "$build" = true ] ; then
 	podman build -t face_rec .
 fi
-podman run -itd -v $HOME/configuration.conf:/root/configuration.conf --name fr face_rec
+podman run -itd -v $HOME/configuration.conf:/root/configuration.conf:z --name fr face_rec

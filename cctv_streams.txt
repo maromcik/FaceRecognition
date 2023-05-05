@@ -1,0 +1,17 @@
+rtmp://192.168.5.51:1935/livemain
+2688
+1520
+
+rtsp://192.168.5.52/user=admin&password=&channel=1&stream=0.sdp?real_stream
+
+
+rtmp://192.168.5.54:1935/bcs/channel0_main.bcs?channel=0&stream=0&user=admin&password=123456
+
+http://192.168.5.70:8080/video
+
+Zahrada
+rtmp://192.168.3.34:1935/bcs/channel0_main.bcs?channel=0&stream=0&user=admin&password=123456
+Domcek
+rtmp://192.168.3.35:1935/bcs/channel0_main.bcs?channel=0&stream=0&user=admin&password=123456
+Predok
+rtmp://192.168.3.36:1935/bcs/channel0_main.bcs?channel=0&stream=0&user=admin&password=123456
